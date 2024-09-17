@@ -1,0 +1,19 @@
+{
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+    "dependencies": [
+        "loadso",
+        "syscmdline",
+        "qmsetup",
+        "nlohmann-json",
+        "yaml-cpp",
+        "libsndfile"
+    ],
+    "vcpkg-configuration": {
+        "overlay-ports": [
+            "../vcpkg/ports"
+        ],
+        "overlay-triplets": [
+            "../vcpkg/triplets"
+        ]
+    }
+}

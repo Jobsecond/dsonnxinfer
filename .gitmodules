@@ -1,0 +1,3 @@
+[submodule "libs/flowonnx"]
+	path = libs/flowonnx
+	url = https://github.com/Jobsecond/flowonnx/
