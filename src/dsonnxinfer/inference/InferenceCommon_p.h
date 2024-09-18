@@ -54,12 +54,14 @@ InferMap pitchProcess(
         const Segment &dsSegment,
         const DsPitchConfig &dsPitchConfig,
         double frameLength,
+        bool predictDur,
         Status *status = nullptr);
 
 InferMap variancePreprocess(
         const Segment &dsSegment,
         const DsVarianceConfig &dsVarianceConfig,
         double frameLength,
+        bool predictDur,
         Status *status = nullptr);
 
 std::vector<float> getSpkMix(const SpeakerEmbed &spkEmb, const std::vector<std::string> &speakers, const SpeakerMixCurve &spkMix, double frameLength, int64_t targetLength);

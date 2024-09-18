@@ -64,7 +64,7 @@ public:
         bool predictDur = dsVarianceConfig.features & kfLinguisticPredictDur;
 
         auto linguisticInputData = linguisticPreprocess(name2token, languages, dsSegment, frameLength, predictDur);
-        auto varianceInputData = variancePreprocess(dsSegment, dsVarianceConfig, frameLength);
+        auto varianceInputData = variancePreprocess(dsSegment, dsVarianceConfig, frameLength, predictDur);
 
         const int64_t shapeArr = 1;
 
@@ -79,7 +79,9 @@ public:
 
         dataLinguistic.inputData = std::move(linguisticInputData);
         dataLinguistic.bindings.push_back({1, "encoder_out", "encoder_out", false});
-        dataLinguistic.bindings.push_back({1, "ph_dur", "ph_dur", true});
+        if (!predictDur) {
+            dataLinguistic.bindings.push_back({1, "ph_dur", "ph_dur", true});
+        }
         dataLinguistic.outputNames.emplace_back("x_masks");
         dataVariance.inputData = std::move(varianceInputData);
         dataVariance.outputNames = expectParamNames;

@@ -48,7 +48,7 @@ public:
         bool predictDur = dsPitchConfig.features & kfLinguisticPredictDur;
 
         auto linguisticInputData = linguisticPreprocess(name2token, languages, dsSegment, frameLength, predictDur);
-        auto pitchInputData = pitchProcess(dsSegment, dsPitchConfig, frameLength);
+        auto pitchInputData = pitchProcess(dsSegment, dsPitchConfig, frameLength, predictDur);
 
         const int64_t shapeArr = 1;
 
@@ -63,7 +63,9 @@ public:
 
         dataLinguistic.inputData = std::move(linguisticInputData);
         dataLinguistic.bindings.push_back({1, "encoder_out", "encoder_out", false});
-        dataLinguistic.bindings.push_back({1, "ph_dur", "ph_dur", true});
+        if (!predictDur) {
+            dataLinguistic.bindings.push_back({1, "ph_dur", "ph_dur", true});
+        }
         dataLinguistic.outputNames.emplace_back("x_masks");
         dataPitch.inputData = std::move(pitchInputData);
         dataPitch.outputNames.emplace_back("pitch_pred");

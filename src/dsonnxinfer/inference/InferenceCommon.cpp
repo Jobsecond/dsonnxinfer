@@ -421,6 +421,7 @@ InferMap pitchProcess(
         const Segment &dsSegment,
         const DsPitchConfig &dsPitchConfig,
         double frameLength,
+        bool predictDur,
         Status *status) {
     InferMap m;
 
@@ -461,6 +462,12 @@ InferMap pitchProcess(
     }
     m["note_dur"] = toInferDataInPlace(std::move(noteDur));
 
+    if (predictDur) {
+        // The linguistic model inputs word_div and word_dur.
+        // So ph_dur should be an input of pitch model, instead of binding from linguistic model input.
+        m["ph_dur"] = parsePhonemeDurations(dsSegment, frameLength);
+    }
+
     if (auto it = dsSegment.parameters.find("pitch"); it != dsSegment.parameters.end()) {
         const auto &pitch = it->second;
         m["pitch"] = toInferDataAsType<double, float>(pitch.sample_curve.resample(frameLength, nFrames));
@@ -496,6 +503,7 @@ InferMap variancePreprocess(
         const Segment &dsSegment,
         const DsVarianceConfig &dsVarianceConfig,
         double frameLength,
+        bool predictDur,
         Status *status) {
     InferMap m;
     // TODO
@@ -512,6 +520,12 @@ InferMap variancePreprocess(
     } else {
         putStatus(status, Status_InferError, "Missing parameter \"pitch\" from segment");
         return {};
+    }
+
+    if (predictDur) {
+        // The linguistic model inputs word_div and word_dur.
+        // So ph_dur should be an input of variance model, instead of binding from linguistic model input.
+        m["ph_dur"] = parsePhonemeDurations(dsSegment, frameLength);
     }
 
     std::vector<unsigned char> retake;
