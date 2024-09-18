@@ -7,6 +7,7 @@
 
 #include <flowonnx/inference.h>
 #include "InferenceCommon_p.h"
+#include <dsonnxinfer/Environment.h>
 
 #ifdef DSONNXINFER_ENABLE_AUDIO_EXPORT
 #include <sndfile.hh>
@@ -16,6 +17,10 @@ DSONNXINFER_BEGIN_NAMESPACE
 
 class AcousticInference::Impl {
 public:
+    Impl() :
+            steps(Environment::instance()->defaultSteps()),
+            depth(Environment::instance()->defaultDepth()) {}
+
     Status open() {
         /*bool loadDsConfigOk, loadDsVocoderConfigOk;
         dsConfig = DsConfig::fromYAML(dsConfigPath, &loadDsConfigOk);
@@ -57,10 +62,36 @@ public:
         int hopSize = dsConfig.hopSize;
         double frameLength = 1.0 * hopSize / sampleRate;
 
-        auto inputData = acousticPreprocess(name2token, languages, dsSegment, dsConfig, frameLength, 0);
+        auto inputData = acousticPreprocess(
+                name2token, languages, dsSegment, dsConfig, frameLength, 0, status);
+        if (inputData.empty()) {
+            return {};
+        }
         const int64_t shapeArr = 1;
-        inputData["depth"] = flowonnx::Tensor::create(&depth, 1, &shapeArr, 1);
-        inputData["steps"] = flowonnx::Tensor::create(&steps, 1, &shapeArr, 1);
+
+        if (dsConfig.features & kfContinuousAcceleration) {
+            inputData["steps"] = flowonnx::Tensor::create(&steps, 1, &shapeArr, 1);
+        } else {
+            int64_t speedup = getSpeedupFromSteps(steps);
+            inputData["speedup"] = flowonnx::Tensor::create(&speedup, 1, &shapeArr, 1);
+        }
+
+        if (dsConfig.features & kfVariableDepth) {
+            inputData["depth"] = flowonnx::Tensor::create(&depth, 1, &shapeArr, 1);
+        } else {
+            int64_t dsDepthInt64 = std::llround(depth * 1000);
+            if ((dsConfig.features & kfShallowDiffusion) && !(dsConfig.features & kfContinuousAcceleration)) {
+                if (dsConfig.maxDepth < 0) {
+                    putStatus(status, Status_InferError, "!! ERROR: max_depth is unset or negative in acoustic configuration.");
+                    return {};
+                }
+                dsDepthInt64 = (std::min)(dsDepthInt64, static_cast<int64_t>(dsConfig.maxDepth));
+                int64_t speedup = getSpeedupFromSteps(steps);
+                // make sure depth can be divided by speedup
+                dsDepthInt64 = dsDepthInt64 / speedup * speedup;
+            }
+            inputData["depth"] = flowonnx::Tensor::create(&dsDepthInt64, 1, &shapeArr, 1);
+        }
 
         flowonnx::InferenceData dataAcoustic, dataVocoder;
 
@@ -93,8 +124,8 @@ public:
     std::unordered_map<std::string, int64_t> name2token;
     std::unordered_map<std::string, int64_t> languages;
     flowonnx::Inference inferenceHandle;
-    float depth = 1.0;
-    int64_t steps = 20;
+    float depth;
+    int64_t steps;
 };
 
 AcousticInference::AcousticInference(DsConfig &&dsConfig,

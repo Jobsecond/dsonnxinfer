@@ -39,8 +39,9 @@ public:
         int sampleRate = dsDurConfig.sampleRate;
         int hopSize = dsDurConfig.hopSize;
         double frameLength = 1.0 * hopSize / sampleRate;
+        bool predictDur = dsDurConfig.features & kfLinguisticPredictDur;
 
-        auto linguisticInputData = linguisticPreprocess(name2token, languages, dsSegment, frameLength);
+        auto linguisticInputData = linguisticPreprocess(name2token, languages, dsSegment, frameLength, predictDur);
         auto durInputData = durPreprocess(dsSegment);
 
 

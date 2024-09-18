@@ -71,6 +71,18 @@ DsConfig DsConfig::fromYAML(const std::filesystem::path &dsConfigPath, bool *ok)
         }
     }
 
+    if (const auto node = config["use_tension_embed"]) {
+        if (node.as<bool>()) {
+            dsConfig.features |= kfParamTension;
+        }
+    }
+
+    if (const auto node = config["use_voicing_embed"]) {
+        if (node.as<bool>()) {
+            dsConfig.features |= kfParamVoicing;
+        }
+    }
+
     if (const auto node = config["use_shallow_diffusion"]) {
         if (node.as<bool>()) {
             dsConfig.features |= kfShallowDiffusion;
@@ -87,11 +99,6 @@ DsConfig DsConfig::fromYAML(const std::filesystem::path &dsConfigPath, bool *ok)
         }
     }
 
-    if (const auto node = config["use_tension_embed"]) {
-        if (node.as<bool>()) {
-            dsConfig.features |= kfParamTension;
-        }
-    }
     if (const auto node = config["use_variable_depth"]) {
         if (node.as<bool>()) {
             dsConfig.features |= kfVariableDepth;
@@ -372,6 +379,12 @@ DsPitchConfig DsPitchConfig::fromYAML(const std::filesystem::path &dsPitchConfig
     if (const auto node = config["use_note_rest"]) {
         if (node.as<bool>()) {
             dsPitchConfig.features |= kfParamNoteRest;
+        }
+    }
+
+    if (const auto node = config["use_continuous_acceleration"]) {
+        if (node.as<bool>()) {
+            dsPitchConfig.features |= kfContinuousAcceleration;
         }
     }
 

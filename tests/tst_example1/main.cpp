@@ -31,6 +31,10 @@ int main(int argc, char *argv[]) {
         return RESULT_ENV_LOAD_FAILED;
     }
 
+    env.setDeviceIndex(0);
+    env.setDefaultSteps(20);
+    env.setDefaultDepth(1.0f);
+
     // Load input data (json format)
     std::ifstream dsFile(R"(D:\test_dsinfer_data\test_dsinfer_data_0.json)");
     if (!dsFile.is_open()) {

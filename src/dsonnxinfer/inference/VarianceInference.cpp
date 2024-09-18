@@ -10,11 +10,16 @@
 
 #include <flowonnx/inference.h>
 #include "InferenceCommon_p.h"
+#include <dsonnxinfer/Environment.h>
 
 DSONNXINFER_BEGIN_NAMESPACE
 
 class VarianceInference::Impl {
 public:
+    Impl() :
+            steps(Environment::instance()->defaultSteps()),
+            depth(Environment::instance()->defaultDepth()) {}
+
     Status open() {
         if (dsVarianceConfig.features & kfMultiLanguage) {
             readMultiLangPhonemesFile(dsVarianceConfig.phonemes, name2token);
@@ -56,13 +61,19 @@ public:
         int sampleRate = dsVarianceConfig.sampleRate;
         int hopSize = dsVarianceConfig.hopSize;
         double frameLength = 1.0 * hopSize / sampleRate;
+        bool predictDur = dsVarianceConfig.features & kfLinguisticPredictDur;
 
-        auto linguisticInputData = linguisticPreprocessNoDurPredict(name2token, languages, dsSegment, frameLength);
+        auto linguisticInputData = linguisticPreprocess(name2token, languages, dsSegment, frameLength, predictDur);
         auto varianceInputData = variancePreprocess(dsSegment, dsVarianceConfig, frameLength);
 
         const int64_t shapeArr = 1;
-        // varianceInputData["depth"] = flowonnx::Tensor::create(&depth, 1, &shapeArr, 1);
-        varianceInputData["steps"] = flowonnx::Tensor::create(&steps, 1, &shapeArr, 1);
+
+        if (dsVarianceConfig.features & kfContinuousAcceleration) {
+            varianceInputData["steps"] = flowonnx::Tensor::create(&steps, 1, &shapeArr, 1);
+        } else {
+            int64_t speedup = getSpeedupFromSteps(steps);
+            varianceInputData["speedup"] = flowonnx::Tensor::create(&speedup, 1, &shapeArr, 1);
+        }
 
         flowonnx::InferenceData dataLinguistic, dataVariance;
 
@@ -95,8 +106,8 @@ public:
     std::unordered_map<std::string, int64_t> languages;
     std::vector<std::string> expectParamNames;
     flowonnx::Inference inferenceHandle;
-    float depth = 1.0;
-    int64_t steps = 20;
+    float depth;
+    int64_t steps;
 };
 
 VarianceInference::VarianceInference(DsVarianceConfig &&dsVarianceConfig)

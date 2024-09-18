@@ -24,6 +24,16 @@ public:
     bool isLoaded() const;
 
     std::filesystem::path runtimePath() const;
+
+    int deviceIndex() const;
+    void setDeviceIndex(int deviceIndex);
+
+    int defaultSteps() const;
+    void setDefaultSteps(int defaultSteps);
+
+    float defaultDepth() const;
+    void setDefaultDepth(float defaultDepth);
+
     ExecutionProvider executionProvider() const;
     std::string versionString() const;
 

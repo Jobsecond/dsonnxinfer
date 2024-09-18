@@ -8,11 +8,16 @@
 
 #include <flowonnx/inference.h>
 #include "InferenceCommon_p.h"
+#include <dsonnxinfer/Environment.h>
 
 DSONNXINFER_BEGIN_NAMESPACE
 
 class PitchInference::Impl {
 public:
+    Impl() :
+            steps(Environment::instance()->defaultSteps()),
+            depth(Environment::instance()->defaultDepth()) {}
+
     Status open() {
         if (dsPitchConfig.features & kfMultiLanguage) {
             readMultiLangPhonemesFile(dsPitchConfig.phonemes, name2token);
@@ -40,13 +45,19 @@ public:
         int sampleRate = dsPitchConfig.sampleRate;
         int hopSize = dsPitchConfig.hopSize;
         double frameLength = 1.0 * hopSize / sampleRate;
+        bool predictDur = dsPitchConfig.features & kfLinguisticPredictDur;
 
-        auto linguisticInputData = linguisticPreprocessNoDurPredict(name2token, languages, dsSegment, frameLength);
+        auto linguisticInputData = linguisticPreprocess(name2token, languages, dsSegment, frameLength, predictDur);
         auto pitchInputData = pitchProcess(dsSegment, dsPitchConfig, frameLength);
 
         const int64_t shapeArr = 1;
-        // pitchInputData["depth"] = flowonnx::Tensor::create(&depth, 1, &shapeArr, 1);
-        pitchInputData["steps"] = flowonnx::Tensor::create(&steps, 1, &shapeArr, 1);
+
+        if (dsPitchConfig.features & kfContinuousAcceleration) {
+            pitchInputData["steps"] = flowonnx::Tensor::create(&steps, 1, &shapeArr, 1);
+        } else {
+            int64_t speedup = getSpeedupFromSteps(steps);
+            pitchInputData["speedup"] = flowonnx::Tensor::create(&speedup, 1, &shapeArr, 1);
+        }
 
         flowonnx::InferenceData dataLinguistic, dataPitch;
 
@@ -78,8 +89,8 @@ public:
     std::unordered_map<std::string, int64_t> name2token;
     std::unordered_map<std::string, int64_t> languages;
     flowonnx::Inference inferenceHandle;
-    float depth = 1.0;
-    int64_t steps = 20;
+    float depth;
+    int64_t steps;
 };
 
 PitchInference::PitchInference(DsPitchConfig &&dsPitchConfig)

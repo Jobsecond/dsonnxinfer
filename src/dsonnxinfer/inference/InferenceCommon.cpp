@@ -185,7 +185,8 @@ InferMap acousticPreprocess(
         const Segment &dsSegment,
         const DsConfig &dsConfig,
         double frameLength,
-        double transpose) {
+        double transpose,
+        Status *status) {
 
     InferMap m;
 
@@ -241,16 +242,29 @@ InferMap acousticPreprocess(
     if ((dsConfig.features & kfParamVelocity) && !tryAddParam("velocity")) {
         m["velocity"] = tensor1;
     }
+    std::vector<std::string> missingParameters;
     if ((dsConfig.features & kfParamBreathiness) && !tryAddParam("breathiness")) {
-        // TODO: error handling
+        missingParameters.emplace_back("breathiness");
     }
     if ((dsConfig.features & kfParamTension) && !tryAddParam("tension")) {
-        // TODO: error handling
+        missingParameters.emplace_back("tension");
+    }
+    if ((dsConfig.features & kfParamVoicing) && !tryAddParam("voicing")) {
+        missingParameters.emplace_back("voicing");
     }
     if ((dsConfig.features & kfParamEnergy) && !tryAddParam("energy")) {
-        // TODO: error handling
+        missingParameters.emplace_back("energy");
     }
 
+    if (!missingParameters.empty()) {
+        std::string errMsg = "The acoustic model expects";
+        for (const auto &missingParameter : missingParameters) {
+            errMsg += " \"" + missingParameter + '\"';
+        }
+        errMsg += " but such parameters are not provided.";
+        putStatus(status, Status_InferError, std::move(errMsg));
+        return {};
+    }
     // DONE: static spk_mix
     // TODO: curve spk_mix
 
@@ -269,7 +283,9 @@ InferMap linguisticPreprocess(
         const std::unordered_map<std::string, int64_t> &name2token,
         const std::unordered_map<std::string, int64_t> &languages,
         const Segment &dsSegment,
-        double frameLength) {
+        double frameLength,
+        bool predictDur,
+        Status *status) {
     InferMap m;
 
     bool isMultiLang = !languages.empty();
@@ -278,46 +294,32 @@ InferMap linguisticPreprocess(
         m["languages"] = parsePhonemeLanguages(dsSegment, languages);
     }
 
-    std::vector<int64_t> wordDiv(dsSegment.words.size());
-    std::transform(dsSegment.words.begin(), dsSegment.words.end(), wordDiv.begin(),
-                   [](const Word &word) { return word.phones.size(); });
+    if (predictDur) {
+        std::vector<int64_t> wordDiv(dsSegment.words.size());
+        std::transform(dsSegment.words.begin(), dsSegment.words.end(), wordDiv.begin(),
+                       [](const Word &word) { return word.phones.size(); });
 
-    m["word_div"] = toInferDataInPlace(std::move(wordDiv));
+        m["word_div"] = toInferDataInPlace(std::move(wordDiv));
 
-    std::vector<int64_t> wordDurFrames;
-    wordDurFrames.reserve(dsSegment.words.size());
+        std::vector<int64_t> wordDurFrames;
+        wordDurFrames.reserve(dsSegment.words.size());
 
-    int64_t wordDurSumPrevFrames = 0;
-    double wordDurSumCurr = 0.0;
-    for (const auto &word : dsSegment.words) {
-        wordDurSumCurr += word.duration();
-        int64_t wordDurSumCurrFrames = std::llround(wordDurSumCurr / frameLength);
-        wordDurFrames.push_back(wordDurSumCurrFrames - wordDurSumPrevFrames);
-        wordDurSumPrevFrames = wordDurSumCurrFrames;
+        int64_t wordDurSumPrevFrames = 0;
+        double wordDurSumCurr = 0.0;
+        for (const auto &word: dsSegment.words) {
+            wordDurSumCurr += word.duration();
+            int64_t wordDurSumCurrFrames = std::llround(wordDurSumCurr / frameLength);
+            wordDurFrames.push_back(wordDurSumCurrFrames - wordDurSumPrevFrames);
+            wordDurSumPrevFrames = wordDurSumCurrFrames;
+        }
+        m["word_dur"] = toInferDataInPlace(std::move(wordDurFrames));
+    } else {
+        m["ph_dur"] = parsePhonemeDurations(dsSegment, frameLength);
     }
-    m["word_dur"] = toInferDataInPlace(std::move(wordDurFrames));
-
     return m;
 }
 
-InferMap linguisticPreprocessNoDurPredict(
-        const std::unordered_map<std::string, int64_t> &name2token,
-        const std::unordered_map<std::string, int64_t> &languages,
-        const Segment &dsSegment,
-        double frameLength) {
-    InferMap m;
-
-    bool isMultiLang = !languages.empty();
-    m["tokens"] = parsePhonemeTokens(dsSegment, name2token, isMultiLang);
-    if (isMultiLang) {
-        m["languages"] = parsePhonemeLanguages(dsSegment, languages);
-    }
-    m["ph_dur"] = parsePhonemeDurations(dsSegment, frameLength);
-
-    return m;
-}
-
-InferMap durPreprocess(const Segment &dsSegment) {
+InferMap durPreprocess(const Segment &dsSegment, Status *status) {
     InferMap m;
     std::vector<int64_t> phMidi;
     phMidi.reserve(dsSegment.phoneCount());
@@ -415,7 +417,11 @@ InferMap durPreprocess(const Segment &dsSegment) {
 }
 
 
-InferMap pitchProcess(const Segment &dsSegment, const DsPitchConfig &dsPitchConfig, double frameLength) {
+InferMap pitchProcess(
+        const Segment &dsSegment,
+        const DsPitchConfig &dsPitchConfig,
+        double frameLength,
+        Status *status) {
     InferMap m;
 
     size_t noteCount = dsSegment.noteCount();
@@ -486,7 +492,11 @@ InferMap pitchProcess(const Segment &dsSegment, const DsPitchConfig &dsPitchConf
     return m;
 }
 
-InferMap variancePreprocess(const Segment &dsSegment, const DsVarianceConfig &dsVarianceConfig, double frameLength) {
+InferMap variancePreprocess(
+        const Segment &dsSegment,
+        const DsVarianceConfig &dsVarianceConfig,
+        double frameLength,
+        Status *status) {
     InferMap m;
     // TODO
     double durSum = 0.0;
@@ -500,7 +510,8 @@ InferMap variancePreprocess(const Segment &dsSegment, const DsVarianceConfig &ds
         const auto &pitch = it->second;
         m["pitch"] = toInferDataAsType<double, float>(pitch.sample_curve.resample(frameLength, nFrames));
     } else {
-        // TODO: error handling
+        putStatus(status, Status_InferError, "Missing parameter \"pitch\" from segment");
+        return {};
     }
 
     std::vector<unsigned char> retake;
@@ -521,7 +532,9 @@ InferMap variancePreprocess(const Segment &dsSegment, const DsVarianceConfig &ds
     }
 
     if (expectParamNames.empty()) {
-        // TODO: error handling
+        putStatus(status, Status_InferError,
+                  "According to the variance model config, it does not predict any parameters. Please check the config!");
+        return {};
     } else {
         retake.resize(expectParamNames.size() * nFrames);
     }

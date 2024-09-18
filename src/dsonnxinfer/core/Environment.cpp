@@ -43,6 +43,8 @@ public:
     }
 
     flowonnx::Environment _env;
+    int defaultSteps = 20;
+    float defaultDepth = 1.0;
 };
 
 Environment::Environment() : _impl(std::make_unique<Impl>()) {
@@ -70,6 +72,36 @@ Environment *Environment::instance() {
 fs::path Environment::runtimePath() const {
     auto &impl = *_impl;
     return impl._env.runtimePath();
+}
+
+int Environment::deviceIndex() const {
+    auto &impl = *_impl;
+    return impl._env.deviceIndex();
+}
+
+void Environment::setDeviceIndex(int deviceIndex) {
+    auto &impl = *_impl;
+    impl._env.setDeviceIndex(deviceIndex);
+}
+
+int Environment::defaultSteps() const {
+    auto &impl = *_impl;
+    return impl.defaultSteps;
+}
+
+void Environment::setDefaultSteps(int defaultSteps) {
+    auto &impl = *_impl;
+    impl.defaultSteps = defaultSteps;
+}
+
+float Environment::defaultDepth() const {
+    auto &impl = *_impl;
+    return impl.defaultDepth;
+}
+
+void Environment::setDefaultDepth(float defaultDepth) {
+    auto &impl = *_impl;
+    impl.defaultDepth = defaultDepth;
 }
 
 ExecutionProvider Environment::executionProvider() const {
