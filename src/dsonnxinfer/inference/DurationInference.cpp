@@ -12,6 +12,9 @@ DSONNXINFER_BEGIN_NAMESPACE
 
 class DurationInference::Impl {
 public:
+    Impl() :
+            inferenceHandle("ds_duration") {}
+
     Status open() {
         if (dsDurConfig.features & kfMultiLanguage) {
             readMultiLangPhonemesFile(dsDurConfig.phonemes, name2token);

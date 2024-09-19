@@ -17,6 +17,7 @@ DSONNXINFER_BEGIN_NAMESPACE
 class VarianceInference::Impl {
 public:
     Impl() :
+            inferenceHandle("ds_variance"),
             steps(Environment::instance()->defaultSteps()),
             depth(Environment::instance()->defaultDepth()) {}
 

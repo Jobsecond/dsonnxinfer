@@ -18,6 +18,7 @@ DSONNXINFER_BEGIN_NAMESPACE
 class AcousticInference::Impl {
 public:
     Impl() :
+            inferenceHandle("ds_acoustic"),
             steps(Environment::instance()->defaultSteps()),
             depth(Environment::instance()->defaultDepth()) {}
 

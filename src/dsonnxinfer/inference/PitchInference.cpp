@@ -15,6 +15,7 @@ DSONNXINFER_BEGIN_NAMESPACE
 class PitchInference::Impl {
 public:
     Impl() :
+            inferenceHandle("ds_pitch"),
             steps(Environment::instance()->defaultSteps()),
             depth(Environment::instance()->defaultDepth()) {}
 
