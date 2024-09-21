@@ -500,11 +500,11 @@ InferMap pitchProcess(
         const auto &pitch = it->second;
         m["pitch"] = toInferDataAsType<double, float>(pitch.sample_curve.resample(frameLength, nFrames));
         int64_t newRetakeStart = std::clamp(
-                std::llround(static_cast<double>(pitch.retake_start) * pitch.sample_curve.timestep / frameLength),
+                static_cast<int64_t>(std::llround(static_cast<double>(pitch.retake_start) * pitch.sample_curve.timestep / frameLength)),
                 int64_t{0},
                 nFrames);
         auto newRetakeEnd = std::clamp(
-                std::llround(static_cast<double>(pitch.retake_end) * pitch.sample_curve.timestep / frameLength),
+                static_cast<int64_t>(std::llround(static_cast<double>(pitch.retake_end) * pitch.sample_curve.timestep / frameLength)),
                 int64_t{0},
                 nFrames);
         std::vector<unsigned char> retake(nFrames, 0);
@@ -595,11 +595,11 @@ InferMap variancePreprocess(
             const auto &p = it->second;
             m[paramName] = toInferDataAsType<double, float>(p.sample_curve.resample(frameLength, nFrames));
             int64_t newRetakeStart = std::clamp(
-                    std::llround(static_cast<double>(p.retake_start) * p.sample_curve.timestep / frameLength),
+                    static_cast<int64_t>(std::llround(static_cast<double>(p.retake_start) * p.sample_curve.timestep / frameLength)),
                     int64_t{0},
                     nFrames);
             auto newRetakeEnd = std::clamp(
-                    std::llround(static_cast<double>(p.retake_end) * p.sample_curve.timestep / frameLength),
+                    static_cast<int64_t>(std::llround(static_cast<double>(p.retake_end) * p.sample_curve.timestep / frameLength)),
                     int64_t{0},
                     nFrames);
             std::fill(retake.begin() + nFrames * i + newRetakeStart,
