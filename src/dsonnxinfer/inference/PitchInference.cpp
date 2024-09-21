@@ -21,8 +21,10 @@ public:
 
     Status open() {
         if (dsPitchConfig.features & kfMultiLanguage) {
-            readMultiLangPhonemesFile(dsPitchConfig.phonemes, name2token);
             readLangIdFile(dsPitchConfig.languages, languages);
+        }
+        if (isFileExtJson(dsPitchConfig.phonemes)) {
+            readMultiLangPhonemesFile(dsPitchConfig.phonemes, name2token);
         } else {
             readPhonemesFile(dsPitchConfig.phonemes, name2token);
         }

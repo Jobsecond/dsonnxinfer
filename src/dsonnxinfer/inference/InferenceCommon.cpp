@@ -100,18 +100,23 @@ Tensor toInferDataAsTypeAndResize(const std::vector<T_Src> &v, int64_t targetLen
 
 Tensor parsePhonemeTokens(
         const Segment &dsSegment,
-        const std::unordered_map<std::string, int64_t> &name2token,
-        bool isMultiLang) {
+        const std::unordered_map<std::string, int64_t> &name2token) {
 
     std::vector<int64_t> tokens;
     tokens.reserve(dsSegment.phoneCount());
     for (const auto &word : dsSegment.words) {
         for (const auto &phone : word.phones) {
             // tokens
-            std::string key = (!isMultiLang || phone.language.empty()) ? phone.token : phone.language + '/' + phone.token;
-            if (phone.token == "SP" || phone.token == "AP") key = phone.token;
-            if (const auto it = name2token.find(key); it != name2token.end()) {
+            std::string tokenWithLang =
+                    (phone.language.empty() || phone.token == "SP" || phone.token == "AP") ?
+                    phone.token :
+                    (phone.language + '/' + phone.token);
+            if (const auto it = name2token.find(tokenWithLang); it != name2token.end()) {
+                // first try finding the phoneme with the language tag (lang/phoneme)
                 tokens.push_back(it->second);
+            } else if (const auto it2 = name2token.find(phone.token); it2 != name2token.end()) {
+                // then try finding the phoneme without the language tag (phoneme)
+                tokens.push_back(it2->second);
             } else {
                 // TODO: error handling
                 tokens.push_back(0);
@@ -191,7 +196,7 @@ InferMap acousticPreprocess(
     InferMap m;
 
     bool isMultiLang = !languages.empty();
-    m["tokens"] = parsePhonemeTokens(dsSegment, name2token, isMultiLang);
+    m["tokens"] = parsePhonemeTokens(dsSegment, name2token);
     if (isMultiLang) {
         m["languages"] = parsePhonemeLanguages(dsSegment, languages);
     }
@@ -289,7 +294,7 @@ InferMap linguisticPreprocess(
     InferMap m;
 
     bool isMultiLang = !languages.empty();
-    m["tokens"] = parsePhonemeTokens(dsSegment, name2token, isMultiLang);
+    m["tokens"] = parsePhonemeTokens(dsSegment, name2token);
     if (isMultiLang) {
         m["languages"] = parsePhonemeLanguages(dsSegment, languages);
     }
@@ -319,10 +324,14 @@ InferMap linguisticPreprocess(
     return m;
 }
 
-InferMap durPreprocess(const Segment &dsSegment, Status *status) {
+InferMap durPreprocess(
+        const Segment &dsSegment,
+        const DsDurConfig &dsDurConfig,
+        Status *status) {
     InferMap m;
+    auto phoneCount = dsSegment.phoneCount();
     std::vector<int64_t> phMidi;
-    phMidi.reserve(dsSegment.phoneCount());
+    phMidi.reserve(phoneCount);
 
     constexpr int64_t restMidi = -127;
 
@@ -413,6 +422,25 @@ InferMap durPreprocess(const Segment &dsSegment, Status *status) {
     fillRestMidiWithNearestInPlace(phMidi, restMidi);
 #endif
     m["ph_midi"] = toInferDataInPlace(std::move(phMidi));
+
+    if (!dsDurConfig.speakers.empty()) {
+        // Required to choose a speaker.
+        // {1, N, 256}
+
+        // TODO: Currently dur model always uses static mix.
+        //       Consider allowing dynamic mix, but the axis is in phonemes instead of frames,
+        //       so processing `spk_embed` in dur model is different than that in pitch, variance and acoustic models.
+        std::unordered_map<std::string, double> staticMixMap;
+        staticMixMap.reserve(dsSegment.speakers.spk.size());
+        for (const auto &[key, value] : dsSegment.speakers.spk) {
+            staticMixMap[key] = value.samples.empty() ? 0 : value.samples[0];
+        }
+        auto spkMix = getSpkMix(dsDurConfig.spkEmb, dsDurConfig.speakers, SpeakerMixCurve::fromStaticMix(staticMixMap),
+                                1, static_cast<int64_t>(phoneCount));
+        std::array<int64_t, 3> shape = {int64_t{1}, static_cast<int64_t>(phoneCount), static_cast<int64_t>(SPK_EMBED_SIZE)};
+        m["spk_embed"] = Tensor::create(spkMix.data(), spkMix.size(), shape.data(), shape.size());
+    }
+
     return m;
 }
 
@@ -494,6 +522,14 @@ InferMap pitchProcess(
             // TODO: warn user that expr is not specified and will use 1.
             m["expr"] = toInferDataInPlace(std::vector<float>(nFrames, 1.0f));
         }
+    }
+
+    if (!dsPitchConfig.speakers.empty()) {
+        // Required to choose a speaker.
+        // {1, N, 256}
+        auto spkMix = getSpkMix(dsPitchConfig.spkEmb, dsPitchConfig.speakers, dsSegment.speakers, frameLength, nFrames);
+        std::array<int64_t, 3> shape = {int64_t{1}, nFrames, static_cast<int64_t>(SPK_EMBED_SIZE)};
+        m["spk_embed"] = Tensor::create(spkMix.data(), spkMix.size(), shape.data(), shape.size());
     }
 
     return m;
@@ -653,11 +689,18 @@ std::vector<float> getSpkMix(const SpeakerEmbed &spkEmb, const std::vector<std::
         auto spkMixResampled = spkMix.resample(frameLength, targetLength);
         for (int64_t i = 0; i < targetLength; ++i) {
             std::unordered_map<std::string, double> mix;
+            double mixSum = std::accumulate(spkMixResampled.spk.begin(), spkMixResampled.spk.end(), 0.0,
+                                            [i](double value, const auto &speakerItem) {
+                                                return value + speakerItem.second.samples[i];
+                                            });
+            if (mixSum == 0) {
+                mixSum = 1;
+            }
             int64_t speakerIndex = 0;
             for (const auto &speakerItem : spkMixResampled.spk) {
                 // If SampleCurve::resample guarantees the size of returned array is at least `targetLength`,
                 // subscripting will not go out of range here.
-                mix[speakerItem.first] = speakerItem.second.samples[i];
+                mix[speakerItem.first] = speakerItem.second.samples[i] / mixSum;
                 ++speakerIndex;
             }
             auto emb = spkEmb.getMixedEmb(mix);
@@ -668,6 +711,18 @@ std::vector<float> getSpkMix(const SpeakerEmbed &spkEmb, const std::vector<std::
         }
     }
     return spk_embed;
+}
+
+bool isFileExtJson(const std::filesystem::path &path) {
+    if (path.empty()) {
+        return false;
+    }
+    std::string fileExt = path.extension().string();
+    if (fileExt.size() != 5) {
+        return false;
+    }
+    std::transform(fileExt.begin() + 1, fileExt.end(), fileExt.begin() + 1, [](char c) { return std::tolower(c); });
+    return fileExt == ".json";
 }
 
 bool readPhonemesFile(const std::filesystem::path &path, std::unordered_map<std::string, int64_t> &out) {

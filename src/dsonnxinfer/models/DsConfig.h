@@ -26,6 +26,7 @@ enum DsFeature: uint32_t {
     kfParamExpr                 = 1 << 10,
     kfParamNoteRest             = 1 << 11,
     kfLinguisticPredictDur      = 1 << 12,
+    kfSpkEmbed                  = 1 << 13,
 };
 
 struct DSONNXINFER_EXPORT DsVocoderConfig {
@@ -94,6 +95,8 @@ struct DSONNXINFER_EXPORT DsPitchConfig {
     std::filesystem::path languages;
     std::filesystem::path linguistic;
     std::filesystem::path pitch;
+    std::vector<std::string> speakers;
+    SpeakerEmbed spkEmb;
 
     int hopSize = 512;
     int sampleRate = 44100;

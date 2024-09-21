@@ -17,8 +17,10 @@ public:
 
     Status open() {
         if (dsDurConfig.features & kfMultiLanguage) {
-            readMultiLangPhonemesFile(dsDurConfig.phonemes, name2token);
             readLangIdFile(dsDurConfig.languages, languages);
+        }
+        if (isFileExtJson(dsDurConfig.phonemes)) {
+            readMultiLangPhonemesFile(dsDurConfig.phonemes, name2token);
         } else {
             readPhonemesFile(dsDurConfig.phonemes, name2token);
         }
@@ -45,7 +47,7 @@ public:
         bool predictDur = dsDurConfig.features & kfLinguisticPredictDur;
 
         auto linguisticInputData = linguisticPreprocess(name2token, languages, dsSegment, frameLength, predictDur);
-        auto durInputData = durPreprocess(dsSegment);
+        auto durInputData = durPreprocess(dsSegment, dsDurConfig);
 
 
         flowonnx::InferenceData dataLinguistic, dataDur;

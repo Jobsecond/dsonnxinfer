@@ -23,8 +23,10 @@ public:
 
     Status open() {
         if (dsVarianceConfig.features & kfMultiLanguage) {
-            readMultiLangPhonemesFile(dsVarianceConfig.phonemes, name2token);
             readLangIdFile(dsVarianceConfig.languages, languages);
+        }
+        if (isFileExtJson(dsVarianceConfig.phonemes)) {
+            readMultiLangPhonemesFile(dsVarianceConfig.phonemes, name2token);
         } else {
             readPhonemesFile(dsVarianceConfig.phonemes, name2token);
         }

@@ -9,12 +9,15 @@ DSONNXINFER_BEGIN_NAMESPACE
 
 std::vector<double>
 SampleCurve::resample(double targetTimestep, int64_t targetLength) const {
-    if (samples.empty() || timestep == 0 || targetTimestep == 0 || targetLength == 0) {
+    if (samples.empty() || targetLength == 0) {
         return {};
     }
     if (samples.size() == 1) {
         std::vector<double> result(targetLength, samples[0]);
         return result;
+    }
+    if (timestep == 0 || targetTimestep == 0) {
+        return {};
     }
     if (targetLength == 1) {
         return { samples[0] };
@@ -65,6 +68,12 @@ SpeakerMixCurve SpeakerMixCurve::resample(double targetTimestep, int64_t targetL
         smc.spk[s.first] = {std::move(s.second.resample(targetTimestep, targetLength)), targetTimestep};
     }
     return smc;
+}
+
+void SpeakerMixCurve::resampleInPlace(double targetTimestep, int64_t targetLength) {
+    for (const auto &s : spk) {
+        spk[s.first] = {std::move(s.second.resample(targetTimestep, targetLength)), targetTimestep};
+    }
 }
 
 SpeakerMixCurve SpeakerMixCurve::fromStaticMix(const std::unordered_map<std::string, double> &spk,

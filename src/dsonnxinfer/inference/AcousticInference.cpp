@@ -36,8 +36,10 @@ public:
         }*/
 
         if (dsConfig.features & kfMultiLanguage) {
-            readMultiLangPhonemesFile(dsConfig.phonemes, name2token);
             readLangIdFile(dsConfig.languages, languages);
+        }
+        if (isFileExtJson(dsConfig.phonemes)) {
+            readMultiLangPhonemesFile(dsConfig.phonemes, name2token);
         } else {
             readPhonemesFile(dsConfig.phonemes, name2token);
         }

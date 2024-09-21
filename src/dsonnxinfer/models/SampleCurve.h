@@ -39,6 +39,7 @@ struct SpeakerMixCurve {
     std::unordered_map<std::string, SampleCurve> spk;
 
     SpeakerMixCurve resample(double targetTimestep, int64_t targetLength) const;
+    void resampleInPlace(double targetTimestep, int64_t targetLength);
     static SpeakerMixCurve fromStaticMix(const std::unordered_map<std::string, double> &spk,
                                          int64_t targetLength = 1,
                                          double targetTimestep = 1.0);

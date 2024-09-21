@@ -12,6 +12,7 @@ struct Note;
 struct Word;
 struct Parameter;
 struct Segment;
+struct SpeakerMixCurve;
 
 void to_json(nlohmann::json &j, const Phoneme &phoneme);
 void from_json(const nlohmann::json &j, Phoneme &phoneme);
@@ -28,6 +29,8 @@ void from_json(const nlohmann::json &j, Parameter &parameter);
 void to_json(nlohmann::json &j, const Segment &segment);
 void from_json(const nlohmann::json &j, Segment &segment);
 
+void to_json(nlohmann::json &j, const SpeakerMixCurve &spk);
+void from_json(const nlohmann::json &j, SpeakerMixCurve &spk);
 
 DSONNXINFER_END_NAMESPACE
 

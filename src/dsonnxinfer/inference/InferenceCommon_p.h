@@ -48,6 +48,7 @@ InferMap linguisticPreprocess(
 
 InferMap durPreprocess(
         const Segment &dsSegment,
+        const DsDurConfig &dsDurConfig,
         Status *status = nullptr);
 
 InferMap pitchProcess(
@@ -65,6 +66,8 @@ InferMap variancePreprocess(
         Status *status = nullptr);
 
 std::vector<float> getSpkMix(const SpeakerEmbed &spkEmb, const std::vector<std::string> &speakers, const SpeakerMixCurve &spkMix, double frameLength, int64_t targetLength);
+
+bool isFileExtJson(const std::filesystem::path &path);
 
 bool readPhonemesFile(const std::filesystem::path &path, std::unordered_map<std::string, int64_t> &out);
 

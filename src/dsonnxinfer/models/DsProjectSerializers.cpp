@@ -1,6 +1,7 @@
 #include "DsProjectSerializers_p.h"
 
 #include <dsonnxinfer/DsProject.h>
+#include <dsonnxinfer/SampleCurve.h>
 
 DSONNXINFER_BEGIN_NAMESPACE
 
@@ -90,8 +91,18 @@ void to_json(nlohmann::json &j, const Parameter &parameter) {
 
 void from_json(const nlohmann::json &j, Parameter &parameter) {
     j.at("tag").get_to(parameter.tag);
-    j.at("interval").get_to(parameter.sample_curve.timestep);
-    j.at("values").get_to(parameter.sample_curve.samples);
+    if (j["dynamic"]) {
+        j.at("interval").get_to(parameter.sample_curve.timestep);
+        j.at("values").get_to(parameter.sample_curve.samples);
+    } else {
+        parameter.sample_curve.samples.resize(1);
+        j.at("value").get_to(parameter.sample_curve.samples[0]);
+        if (auto it = j.find("interval"); it != j.end()) {
+            if (it->is_number()) {
+                it->get_to(parameter.sample_curve.timestep);
+            }
+        }
+    }
 
     if (auto it = j.find("retake"); it != j.end()) {
         if (it->is_object()) {
@@ -122,6 +133,9 @@ void to_json(nlohmann::json &j, const Segment &segment) {
     for (const auto &p : segment.parameters) {
         j["parameters"].push_back(p.second);
     }
+    if (!segment.speakers.empty()) {
+        j["speakers"] = segment.speakers;
+    }
 }
 
 void from_json(const nlohmann::json &j, Segment &segment) {
@@ -146,8 +160,55 @@ void from_json(const nlohmann::json &j, Segment &segment) {
             }
         }
     }
+
+    if (auto it = j.find("speakers"); it != j.end()) {
+        if (it->is_array()) {
+            it->get_to(segment.speakers);
+        }
+    }
 }
 
+void to_json(nlohmann::json &j, const SpeakerMixCurve &spk) {
+    for (const auto &[name, sc] : spk.spk) {
+        nlohmann::json j_item;
+        if (sc.samples.size() == 1) {
+            j_item = {
+                    {"name", name},
+                    {"dynamic", false},
+                    {"value", sc.samples[0]},
+            };
+        } else {
+            j_item = {
+                    {"name", name},
+                    {"dynamic", true},
+                    {"interval", sc.timestep},
+                    {"values", sc.samples},
+            };
+        }
+        j.push_back(std::move(j_item));
+    }
+}
 
+void from_json(const nlohmann::json &j, SpeakerMixCurve &spk) {
+    if (!j.is_array()) {
+        return;
+    }
+    for (const auto &j_item : j) {
+        SampleCurve sc;
+        if (j_item["dynamic"]) {
+            j_item["values"].get_to(sc.samples);
+            j_item["interval"].get_to(sc.timestep);
+        } else {
+            sc.samples.resize(1);
+            j_item["value"].get_to(sc.samples[0]);
+            if (auto it = j_item.find("interval"); it != j_item.end()) {
+                if (it->is_number()) {
+                    it->get_to(sc.timestep);
+                }
+            }
+        }
+        spk.spk.emplace(j_item["name"], std::move(sc));
+    }
+}
 
 DSONNXINFER_END_NAMESPACE

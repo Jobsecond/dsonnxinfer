@@ -112,6 +112,7 @@ DsConfig DsConfig::fromYAML(const std::filesystem::path &dsConfigPath, bool *ok)
     }
 
     if (const auto node = config["speakers"]) {
+        dsConfig.features |= kfSpkEmbed;
         dsConfig.speakers = node.as<std::vector<std::string>>();
         dsConfig.spkEmb.loadSpeakers(dsConfig.speakers, dsConfigDir);
     }
@@ -217,6 +218,7 @@ DsDurConfig DsDurConfig::fromYAML(const std::filesystem::path &dsDurConfigPath, 
     }
 
     if (const auto node = config["speakers"]) {
+        dsDurConfig.features |= kfSpkEmbed;
         dsDurConfig.speakers = node.as<std::vector<std::string>>();
         dsDurConfig.spkEmb.loadSpeakers(dsDurConfig.speakers, dsDurConfigDir);
     }
@@ -300,6 +302,7 @@ DsVarianceConfig DsVarianceConfig::fromYAML(const std::filesystem::path &dsVaria
     }
 
     if (const auto node = config["speakers"]) {
+        dsVarianceConfig.features |= kfSpkEmbed;
         dsVarianceConfig.speakers = node.as<std::vector<std::string>>();
         dsVarianceConfig.spkEmb.loadSpeakers(dsVarianceConfig.speakers, dsVarianceConfigDir);
     }
@@ -380,6 +383,12 @@ DsPitchConfig DsPitchConfig::fromYAML(const std::filesystem::path &dsPitchConfig
         if (node.as<bool>()) {
             dsPitchConfig.features |= kfParamNoteRest;
         }
+    }
+
+    if (const auto node = config["speakers"]) {
+        dsPitchConfig.features |= kfSpkEmbed;
+        dsPitchConfig.speakers = node.as<std::vector<std::string>>();
+        dsPitchConfig.spkEmb.loadSpeakers(dsPitchConfig.speakers, dsPitchConfigDir);
     }
 
     if (const auto node = config["use_continuous_acceleration"]) {
