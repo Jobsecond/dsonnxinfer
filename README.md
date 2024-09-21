@@ -6,20 +6,53 @@ DiffSinger inference utility
 
 + qmsetup
 + flowonnx
+  + onnxruntime
 + syscmdline
 + nlohmann/json
 
 ## Setup Environment
 
+### Step 1: Clone repository
 ```bash
 git clone --recursive https://github.com/Jobsecond/dsonnxinfer.git
 
 cd dsonnxinfer
+```
 
+### Step 2: Download onnxruntime
+#### (1) Change directory to flowonnx libs
+
+```bash
 pushd libs/flowonnx/libs
-cmake [-Dep="gpu"|"gpu-cuda12"|"dml"] -P ../scripts/setup-onnxruntime.cmake
-popd
+# On Windows use backslash:
+# pushd libs\flowonnx\libs
+```
 
+#### (2) Download ONNX Runtime
+* For CUDA 11.x version:
+   ```bash
+   cmake -Dep="gpu" -P ../scripts/setup-onnxruntime.cmake
+   ```
+* For CUDA 12.x version:
+   ```bash
+   cmake -Dep="gpu-cuda12" -P ../scripts/setup-onnxruntime.cmake
+   ```
+* For DirectML:
+   ```bash
+   cmake -Dep="dml" -P ../scripts/setup-onnxruntime.cmake
+   ```
+* For CPU only:
+   ```bash
+   cmake -P ../scripts/setup-onnxruntime.cmake
+   ```
+
+#### (3) Return to dsonnxinfer repo root directory:
+```bash
+popd
+```
+
+### Step 3: Download other dependencies
+```bash
 git clone https://github.com/microsoft/vcpkg.git
 
 pushd vcpkg
@@ -28,7 +61,8 @@ vcpkg install --x-manifest-root=../scripts/vcpkg-manifest --x-install-root=./ins
 popd
 ```
 
-Configure CMake
+### CMake Configure Options
+Add these to CMake configure options:
 ```bash
 -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake
 
