@@ -90,6 +90,10 @@ public:
         return result;
     }
 
+    bool terminate() {
+        return inferenceHandle.terminate();
+    }
+
     DsPitchConfig dsPitchConfig;
     std::unordered_map<std::string, int64_t> name2token;
     std::unordered_map<std::string, int64_t> languages;
@@ -172,6 +176,11 @@ bool PitchInference::runInPlace(Segment &dsSegment, Status *status) {
         return true;
     }
     return false;
+}
+
+bool PitchInference::terminate() {
+    auto &impl = *_impl;
+    return impl.terminate();
 }
 
 PitchInference::~PitchInference() = default;

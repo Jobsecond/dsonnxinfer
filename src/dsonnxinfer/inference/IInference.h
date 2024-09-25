@@ -27,6 +27,7 @@ public:
     virtual Status open() = 0;
     virtual void close() = 0;
     //virtual InferMap infer(const Segment &dsSegment, Status *status) = 0;
+    virtual bool terminate() = 0;
 
 protected:
     InferenceType m_type;

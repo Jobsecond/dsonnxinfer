@@ -120,6 +120,10 @@ public:
         return result;
     }
 
+    bool terminate() {
+        return inferenceHandle.terminate();
+    }
+
     //std::filesystem::path dsConfigPath;
     //std::filesystem::path dsVocoderConfigPath;
     DsConfig dsConfig;
@@ -230,6 +234,11 @@ bool AcousticInference::runAndSaveAudio(
     }
     return false;
 #endif
+}
+
+bool AcousticInference::terminate() {
+    auto &impl = *_impl;
+    return impl.terminate();
 }
 
 AcousticInference::~AcousticInference() = default;

@@ -106,6 +106,10 @@ public:
         return result;
     }
 
+    bool terminate() {
+        return inferenceHandle.terminate();
+    }
+
     DsVarianceConfig dsVarianceConfig;
     std::unordered_map<std::string, int64_t> name2token;
     std::unordered_map<std::string, int64_t> languages;
@@ -191,6 +195,11 @@ bool VarianceInference::runInPlace(Segment &dsSegment, Status *status) {
         }
     }
     return true;
+}
+
+bool VarianceInference::terminate() {
+    auto &impl = *_impl;
+    return impl.terminate();
 }
 
 VarianceInference::~VarianceInference() = default;

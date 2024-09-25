@@ -26,6 +26,8 @@ public:
     //InferMap infer(const Segment &dsSegment, Status *status) override;
     bool runAndSaveAudio(const Segment &dsSegment, const std::filesystem::path &path, Status *status);
 
+    bool terminate() override;
+
 protected:
     class Impl;
     std::unique_ptr<Impl> _impl;

@@ -23,6 +23,7 @@ public:
 
     //InferMap infer(const Segment &dsSegment, Status *status) override;
     bool runInPlace(Segment &dsSegment, Status *status);
+    bool terminate() override;
 
 protected:
     class Impl;

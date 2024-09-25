@@ -75,6 +75,10 @@ public:
         return result;
     }
 
+    bool terminate() {
+        return inferenceHandle.terminate();
+    }
+
     DsDurConfig dsDurConfig;
     std::unordered_map<std::string, int64_t> name2token;
     std::unordered_map<std::string, int64_t> languages;
@@ -148,6 +152,11 @@ bool DurationInference::runInPlace(Segment &dsSegment, Status *status) {
         return true;
     }
     return false;
+}
+
+bool DurationInference::terminate() {
+    auto &impl = *_impl;
+    return impl.terminate();
 }
 
 DurationInference::~DurationInference() = default;
