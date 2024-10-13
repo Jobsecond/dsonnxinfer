@@ -157,20 +157,26 @@ Tensor parsePhonemeDurations(
 
     double phoneDurSum = 0.0;
 
-    for (const auto &word : dsSegment.words) {
+    for (size_t currWordIndex = 0; currWordIndex < dsSegment.words.size(); ++currWordIndex) {
+        const auto &word = dsSegment.words[currWordIndex];
         auto wordDuration = word.duration();
-
-        bool phoneDurFlag = false;
-        double phoneDurPrevStart = 0.0;
 
         for (size_t i = 0; i < word.phones.size(); ++i) {
 
             // durations
             {
+                bool currPhoneIsTheLastPhone = (i == word.phones.size() - 1);
                 auto currPhoneStart = phoneDurSum +
                                       word.phones[i].start;
                 auto nextPhoneStart = phoneDurSum +
-                                      ((i == word.phones.size() - 1) ? wordDuration : word.phones[i + 1].start);
+                                      (currPhoneIsTheLastPhone ? wordDuration : word.phones[i + 1].start);
+                if (currPhoneIsTheLastPhone && (currWordIndex + 1 < dsSegment.words.size())) {
+                    // If current word is not the last word
+                    const auto &nextWord = dsSegment.words[currWordIndex + 1];
+                    if (!nextWord.phones.empty()) {
+                        nextPhoneStart += nextWord.phones[0].start;
+                    }
+                }
                 int64_t currPhoneStartFrames = std::llround(currPhoneStart / frameLength);
                 int64_t nextPhoneStartFrames = std::llround(nextPhoneStart / frameLength);
                 durations.push_back(nextPhoneStartFrames - currPhoneStartFrames);
