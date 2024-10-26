@@ -34,6 +34,8 @@ public:
     float defaultDepth() const;
     void setDefaultDepth(float defaultDepth);
 
+    void setLoggerCallback(DsLoggingCallback callback);
+
     ExecutionProvider executionProvider() const;
     std::string versionString() const;
 

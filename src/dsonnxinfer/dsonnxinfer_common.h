@@ -12,6 +12,21 @@ enum ExecutionProvider {
     EP_CoreML = 4,
 };
 
+enum DsLoggingLevel {
+    LOGGING_LEVEL_OFF = 0,
+    LOGGING_LEVEL_FATAL = 1,
+    LOGGING_LEVEL_ERROR = 2,
+    LOGGING_LEVEL_WARNING = 3,
+    LOGGING_LEVEL_INFO = 4,
+    LOGGING_LEVEL_DEBUG = 5,
+};
+
+using DsLoggingCallback = void (*)(
+    int,            // level
+    const char *,   // category
+    const char *    // message
+);
+
 DSONNXINFER_END_NAMESPACE
 
 #endif // DSONNXINFER_COMMON_H

@@ -1,10 +1,13 @@
 #include "Environment.h"
 
 #include <flowonnx/environment.h>
+#include <flowonnx/logger.h>
 
 namespace fs = std::filesystem;
 
 DSONNXINFER_BEGIN_NAMESPACE
+
+using flowonnx::Logger;
 
 static Environment *g_env = nullptr;
 
@@ -102,6 +105,10 @@ float Environment::defaultDepth() const {
 void Environment::setDefaultDepth(float defaultDepth) {
     auto &impl = *_impl;
     impl.defaultDepth = defaultDepth;
+}
+
+void Environment::setLoggerCallback(DsLoggingCallback callback) {
+    Logger::setCallback(callback);
 }
 
 ExecutionProvider Environment::executionProvider() const {
