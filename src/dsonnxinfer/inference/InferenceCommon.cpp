@@ -514,7 +514,7 @@ InferMap pitchProcess(
                 int64_t{0},
                 nFrames);
         std::vector<unsigned char> retake(nFrames, 0);
-        std::fill(retake.begin() + newRetakeStart, retake.begin() + newRetakeEnd, int64_t{1});
+        std::fill(retake.begin() + newRetakeStart, retake.begin() + newRetakeEnd, 1);
         m["retake"] = toInferDataAsType<unsigned char, bool>(retake);
     } else {
         // TODO: error handling
@@ -610,13 +610,13 @@ InferMap variancePreprocess(
                     nFrames);
             std::fill(retake.begin() + nFrames * i + newRetakeStart,
                       retake.begin() + nFrames * i + newRetakeEnd,
-                      int64_t{1});
+                      1);
         } else {
             // TODO: error handling
             m[paramName] = toInferDataInPlace(std::vector<float>(nFrames));
             std::fill(retake.begin() + nFrames * i,
                       retake.begin() + nFrames * (i + 1),
-                      int64_t{1});
+                      1);
         }
     }
 
