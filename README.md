@@ -61,6 +61,13 @@ vcpkg install --x-manifest-root=../scripts/vcpkg-manifest --x-install-root=./ins
 popd
 ```
 
+List of vcpkg triplets:
+* Windows MSVC: `x64-windows`
+* Windows MinGW (NOT recommended): `x64-mingw-dynamic`
+* Linux: `x64-linux`
+* macOS (Apple Silicon): `arm64-osx`
+* macOS (Intel): `x64-osx`
+
 ### CMake Configure Options
 Add these to CMake configure options:
 ```bash
@@ -75,3 +82,14 @@ Add these to CMake configure options:
 # If using DirectML:
 -DONNXRUNTIME_ENABLE_DML:BOOL=ON
 ```
+
+<details>
+<summary>For MinGW users:</summary>
+If you are using MinGW on Windows, you need to install the vcpkg packages using <code>x64-mingw-dynamic</code> triplet, and specify the vcpkg triplet in CMake configure options:
+
+```bash
+-DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic
+```
+
+Please note that MinGW support is currently experimental and is NOT recommended to use in production. Windows users are encouraged to use MSVC.
+</details>
