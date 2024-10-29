@@ -37,7 +37,7 @@ public:
     void setLoggerCallback(DsLoggingCallback callback);
 
     ExecutionProvider executionProvider() const;
-    std::string versionString() const;
+    const char *versionString() const;
 
 protected:
     class Impl;

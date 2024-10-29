@@ -116,7 +116,7 @@ ExecutionProvider Environment::executionProvider() const {
     return from_flowonnx_ep(impl._env.executionProvider());
 }
 
-std::string Environment::versionString() const {
+const char *Environment::versionString() const {
     auto &impl = *_impl;
     return impl._env.versionString();
 }
