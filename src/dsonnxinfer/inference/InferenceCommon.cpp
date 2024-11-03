@@ -518,6 +518,8 @@ InferMap pitchProcess(
         m["retake"] = toInferDataAsType<unsigned char, bool>(retake);
     } else {
         // TODO: error handling
+        m["pitch"] = toInferDataInPlace(std::vector<float>(nFrames, 0.0f));
+        m["retake"] = toInferDataAsType<unsigned char, bool>(std::vector<unsigned char>(nFrames, 1));
     }
 
     if (dsPitchConfig.features & kfParamExpr) {
