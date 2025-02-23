@@ -8,7 +8,7 @@
 DSONNXINFER_BEGIN_NAMESPACE
 
 std::vector<double>
-SampleCurve::resample(double targetTimestep, int64_t targetLength) const {
+SampleCurve::resample(double targetTimestep, int64_t targetLength, bool fillLast) const {
     if (samples.empty() || targetLength == 0) {
         return {};
     }
@@ -44,8 +44,8 @@ SampleCurve::resample(double targetTimestep, int64_t targetLength) const {
         targetSamples.resize(targetLength);
     } else if (actualLength < targetLength) {
         // Expand vector to target length, filling last value
-        auto lastValue = targetSamples.back();
-        targetSamples.resize(targetLength, lastValue);
+        double tailFillValue = fillLast ? targetSamples.back() : 0;
+        targetSamples.resize(targetLength, tailFillValue);
     }
     return targetSamples;
 }

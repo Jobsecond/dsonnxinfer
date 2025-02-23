@@ -25,13 +25,17 @@ struct SampleCurve {
      *
      * @param targetTimestep  The target curve time step.
      * @param targetLength    The target length of sample points.
+     * @param fillLast        A boolean indicating whether to use the last value for filling
+     *                        when expanding. If true, the vector is expanded by appending the
+     *                        last element; if false, zeros are appended.
      * @return                The target curve samples
      *
-     * This function resamples original curve to target time step and length. The original curve
-     * will be interpolated, and then resized to target length. If the size of interpolated vector is
-     * smaller than target length, it will be truncated; otherwise, it will be expanded using the last value.
+     * This function resamples the original curve to the target time step and length.
+     * The original curve will be interpolated, then resized to the target length.
+     * If the interpolated vector's size is smaller than the target length, it is expanded by
+     * appending the last value (or zeros if `fillLast` is false). If larger, it is truncated.
      */
-    std::vector<double> resample(double targetTimestep, int64_t targetLength) const;
+    std::vector<double> resample(double targetTimestep, int64_t targetLength, bool fillLast = true) const;
 };
 
 // TODO: still figuring out the format of spk_mix

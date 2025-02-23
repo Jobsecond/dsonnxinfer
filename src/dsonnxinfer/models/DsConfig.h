@@ -12,7 +12,9 @@
 
 DSONNXINFER_BEGIN_NAMESPACE
 
-enum DsFeature: uint32_t {
+using dsfeature_t = uint32_t;
+
+enum DsFeature: dsfeature_t {
     kfParamGender               = 1 << 0,
     kfParamVelocity             = 1 << 1,
     kfParamEnergy               = 1 << 2,
@@ -27,6 +29,7 @@ enum DsFeature: uint32_t {
     kfParamNoteRest             = 1 << 11,
     kfLinguisticPredictDur      = 1 << 12,
     kfSpkEmbed                  = 1 << 13,
+    kfPitchControllable         = 1 << 14,
 };
 
 struct DSONNXINFER_EXPORT DsVocoderConfig {
@@ -37,6 +40,7 @@ struct DSONNXINFER_EXPORT DsVocoderConfig {
     int numMelBins = 128;
     int hopSize = 512;
     int sampleRate = 44100;
+    dsfeature_t features = {};
 
     static DsVocoderConfig fromYAML(const std::filesystem::path &dsVocoderConfigPath, bool *ok = nullptr);
 };
@@ -53,7 +57,7 @@ struct DSONNXINFER_EXPORT DsConfig {
     int hopSize = 512;
     int sampleRate = 44100;
     float maxDepth = 0.0f;
-    uint32_t features = 0;
+    dsfeature_t features = {};
 
     static DsConfig fromYAML(const std::filesystem::path &dsConfigPath, bool *ok = nullptr);
 };
@@ -69,7 +73,7 @@ struct DSONNXINFER_EXPORT DsDurConfig {
     int hopSize = 512;
     int sampleRate = 44100;
 
-    uint32_t features = 0;
+    dsfeature_t features = {};
 
     static DsDurConfig fromYAML(const std::filesystem::path &dsDurConfigPath, bool *ok = nullptr);
 };
@@ -85,7 +89,7 @@ struct DSONNXINFER_EXPORT DsVarianceConfig {
     int hopSize = 512;
     int sampleRate = 44100;
 
-    uint32_t features = 0;
+    dsfeature_t features = {};
 
     static DsVarianceConfig fromYAML(const std::filesystem::path &dsVarianceConfigPath, bool *ok = nullptr);
 };
@@ -101,7 +105,7 @@ struct DSONNXINFER_EXPORT DsPitchConfig {
     int hopSize = 512;
     int sampleRate = 44100;
 
-    uint32_t features = 0;
+    dsfeature_t features = {};
 
     static DsPitchConfig fromYAML(const std::filesystem::path &dsVarianceConfigPath, bool *ok = nullptr);
 };

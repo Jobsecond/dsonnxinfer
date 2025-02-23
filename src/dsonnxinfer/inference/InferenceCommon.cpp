@@ -232,6 +232,10 @@ InferMap acousticPreprocess(
         }
         //m[param.tag] = toInferDataAsType<double, float>(samples);
     }
+    if (!hasPitch) {
+        putStatus(status, Status_InferError, "Missing parameter \"pitch\" from segment");
+        return {};
+    }
     // velocity, gender, energy, breathiness
     auto tryAddParam = [frameLength, targetLength, &dsSegment, &m](const std::string &paramName) {
         if (auto it = dsSegment.parameters.find(paramName); it != dsSegment.parameters.end()) {
@@ -558,9 +562,20 @@ InferMap variancePreprocess(
 
     int64_t nFrames = std::llround(durSum / frameLength);
 
-    if (auto it = dsSegment.parameters.find("pitch"); it != dsSegment.parameters.end()) {
+    if (const auto it = dsSegment.parameters.find("pitch"); it != dsSegment.parameters.end()) {
         const auto &pitch = it->second;
-        m["pitch"] = toInferDataAsType<double, float>(pitch.sample_curve.resample(frameLength, nFrames));
+        auto pitchSamples = pitch.sample_curve.resample(frameLength, nFrames);
+
+        if (const auto it2 = dsSegment.parameters.find("tone_shift"); it2 != dsSegment.parameters.end()) {
+            // assuming `tone_shift` is in cents
+            const auto toneShiftSamples = it2->second.sample_curve.resample(
+                frameLength, nFrames, false);
+            for (size_t i = 0; i < nFrames; ++i) {
+                // assuming `tone_shift` is in semitones
+                pitchSamples[i] += toneShiftSamples[i] / 100.0;
+            }
+        }
+        m["pitch"] = toInferDataAsType<double, float>(pitchSamples);
     } else {
         putStatus(status, Status_InferError, "Missing parameter \"pitch\" from segment");
         return {};

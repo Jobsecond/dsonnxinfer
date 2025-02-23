@@ -19,8 +19,9 @@ class AcousticInference::Impl {
 public:
     Impl() :
             inferenceHandle("ds_acoustic"),
-            steps(Environment::instance()->defaultSteps()),
-            depth(Environment::instance()->defaultDepth()) {}
+            vocoderPreferCpu(true),
+            depth(Environment::instance()->defaultDepth()),
+            steps(Environment::instance()->defaultSteps()) {}
 
     Status open() {
         /*bool loadDsConfigOk, loadDsVocoderConfigOk;
@@ -45,7 +46,7 @@ public:
         }
 
         std::string errorMessage;
-        if (!inferenceHandle.open({{dsConfig.acoustic, false}, {dsVocoderConfig.model, true}}, &errorMessage)) {
+        if (!inferenceHandle.open({{dsConfig.acoustic, false}, {dsVocoderConfig.model, vocoderPreferCpu}}, &errorMessage)) {
             return {Status_ModelLoadError, errorMessage};
         }
 
@@ -100,7 +101,27 @@ public:
 
         dataAcoustic.inputData = std::move(inputData);
         dataAcoustic.bindings.push_back({1, "mel", "mel", false});
-        dataAcoustic.bindings.push_back({1, "f0", "f0", true});
+        if (dsVocoderConfig.features & kfPitchControllable) {
+            if (const auto toneShift = dsSegment.parameters.find("tone_shift"); toneShift != dsSegment.parameters.end()) {
+                auto vocoderF0 = dataAcoustic.inputData["f0"];  // copies the f0 tensor
+                {
+                    float *vocoderF0Data;
+                    const auto vocoderF0Size = vocoderF0.getDataBuffer(&vocoderF0Data);
+                    auto pitchShiftCents = toneShift->second.sample_curve.resample(
+                        frameLength, static_cast<int64_t>(vocoderF0Size), false);
+                    for (size_t i = 0; i < vocoderF0Size; ++i) {
+                        // assuming `tone_shift` is in cents
+                        vocoderF0Data[i] *= static_cast<float>(std::pow(2.0, pitchShiftCents[i] / 1200.0));
+                    }
+                }
+                dataVocoder.inputData["f0"] = std::move(vocoderF0);
+            } else {
+                dataAcoustic.bindings.push_back({1, "f0", "f0", true});
+            }
+        } else {
+            dataAcoustic.bindings.push_back({1, "f0", "f0", true});
+        }
+
         dataVocoder.outputNames.emplace_back("waveform");
 
         std::vector dataList{dataAcoustic, dataVocoder};
@@ -131,6 +152,7 @@ public:
     std::unordered_map<std::string, int64_t> name2token;
     std::unordered_map<std::string, int64_t> languages;
     flowonnx::Inference inferenceHandle;
+    bool vocoderPreferCpu;
     float depth;
     int64_t steps;
 };

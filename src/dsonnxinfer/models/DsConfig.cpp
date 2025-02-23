@@ -157,6 +157,12 @@ DsVocoderConfig DsVocoderConfig::fromYAML(const std::filesystem::path &dsVocoder
         dsVocoderConfig.sampleRate = node.as<int>();
     }
 
+    if (const auto node = config["pitch_controllable"]) {
+        if (node.as<bool>()) {
+            dsVocoderConfig.features |= kfPitchControllable;
+        }
+    }
+
     if (ok) {
         *ok = true;
     }
