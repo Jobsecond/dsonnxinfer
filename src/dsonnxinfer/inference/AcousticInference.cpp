@@ -66,8 +66,10 @@ public:
         int hopSize = dsConfig.hopSize;
         double frameLength = 1.0 * hopSize / sampleRate;
 
+        bool applyToneShift = dsVocoderConfig.features & kfPitchControllable;
+        flowonnx::Tensor originalF0;
         auto inputData = acousticPreprocess(
-                name2token, languages, dsSegment, dsConfig, frameLength, 0, status);
+            name2token, languages, dsSegment, dsConfig, frameLength, 0, applyToneShift, &originalF0, status);
         if (inputData.empty()) {
             return {};
         }
@@ -101,23 +103,8 @@ public:
 
         dataAcoustic.inputData = std::move(inputData);
         dataAcoustic.bindings.push_back({1, "mel", "mel", false});
-        if (dsVocoderConfig.features & kfPitchControllable) {
-            if (const auto toneShift = dsSegment.parameters.find("tone_shift"); toneShift != dsSegment.parameters.end()) {
-                auto vocoderF0 = dataAcoustic.inputData["f0"];  // copies the f0 tensor
-                {
-                    float *vocoderF0Data;
-                    const auto vocoderF0Size = vocoderF0.getDataBuffer(&vocoderF0Data);
-                    auto pitchShiftCents = toneShift->second.sample_curve.resample(
-                        frameLength, static_cast<int64_t>(vocoderF0Size), false);
-                    for (size_t i = 0; i < vocoderF0Size; ++i) {
-                        // assuming `tone_shift` is in cents
-                        vocoderF0Data[i] *= static_cast<float>(std::pow(2.0, pitchShiftCents[i] / 1200.0));
-                    }
-                }
-                dataVocoder.inputData["f0"] = std::move(vocoderF0);
-            } else {
-                dataAcoustic.bindings.push_back({1, "f0", "f0", true});
-            }
+        if (applyToneShift) {
+            dataVocoder.inputData["f0"] = std::move(originalF0);
         } else {
             dataAcoustic.bindings.push_back({1, "f0", "f0", true});
         }

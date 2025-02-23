@@ -36,6 +36,8 @@ InferMap acousticPreprocess(
         const DsConfig &dsConfig,
         double frameLength,
         double transpose,
+        bool applyToneShift,
+        flowonnx::Tensor *outOriginalF0 = nullptr,
         Status *status = nullptr);
 
 InferMap linguisticPreprocess(

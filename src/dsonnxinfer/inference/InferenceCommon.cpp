@@ -197,6 +197,8 @@ InferMap acousticPreprocess(
         const DsConfig &dsConfig,
         double frameLength,
         double transpose,
+        bool applyToneShift,
+        Tensor *outOriginalF0,
         Status *status) {
 
     InferMap m;
@@ -218,8 +220,8 @@ InferMap acousticPreprocess(
     bool hasPitch = false;
     if (auto it = dsSegment.parameters.find("pitch"); it != dsSegment.parameters.end()) {
         const auto &param = it->second;
-        auto samples = param.sample_curve.resample(frameLength, targetLength);
         if (param.tag == "pitch") {
+            auto samples = param.sample_curve.resample(frameLength, targetLength);
             std::transform(samples.begin(), samples.end(), samples.begin(), [transpose](double midiPitch) {
                 constexpr double referenceFrequency = 440.0;
                 constexpr double semitonesInOctave = 12.0;
@@ -227,7 +229,24 @@ InferMap acousticPreprocess(
                 return (referenceFrequency *
                         std::pow(2.0, (midiPitch - midiPitchOffset + transpose) / semitonesInOctave));
             });
-            m["f0"] = toInferDataAsType<double, float>(samples);
+            if (outOriginalF0 != nullptr) {
+                *outOriginalF0 = toInferDataAsType<double, float>(samples);;
+            }
+            if (applyToneShift) {
+                if (const auto it2 = dsSegment.parameters.find("tone_shift"); it2 != dsSegment.parameters.end()) {
+                    const auto &toneShift = it2->second.sample_curve;
+                    if (!toneShift.samples.empty() && toneShift.timestep > 0) {
+                        // assuming `tone_shift` is in cents
+                        const auto toneShiftSamples = it2->second.sample_curve.resample(
+                            frameLength, targetLength, false);
+                        for (size_t i = 0; i < targetLength; ++i) {
+                            // assuming `tone_shift` is in semitones
+                            samples[i] *= std::pow(2.0, toneShiftSamples[i] / 1200.0);
+                        }
+                    }
+                }
+            }
+            m["f0"] = toInferDataAsType<double, float>(samples);;
             hasPitch = true;
         }
         //m[param.tag] = toInferDataAsType<double, float>(samples);
@@ -567,12 +586,15 @@ InferMap variancePreprocess(
         auto pitchSamples = pitch.sample_curve.resample(frameLength, nFrames);
 
         if (const auto it2 = dsSegment.parameters.find("tone_shift"); it2 != dsSegment.parameters.end()) {
-            // assuming `tone_shift` is in cents
-            const auto toneShiftSamples = it2->second.sample_curve.resample(
-                frameLength, nFrames, false);
-            for (size_t i = 0; i < nFrames; ++i) {
-                // assuming `tone_shift` is in semitones
-                pitchSamples[i] += toneShiftSamples[i] / 100.0;
+            const auto &toneShift = it2->second.sample_curve;
+            if (!toneShift.samples.empty() && toneShift.timestep > 0) {
+                // assuming `tone_shift` is in cents
+                const auto toneShiftSamples = toneShift.resample(
+                    frameLength, nFrames, false);
+                for (size_t i = 0; i < nFrames; ++i) {
+                    // assuming `tone_shift` is in semitones
+                    pitchSamples[i] += toneShiftSamples[i] / 100.0;
+                }
             }
         }
         m["pitch"] = toInferDataAsType<double, float>(pitchSamples);
