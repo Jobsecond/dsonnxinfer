@@ -17,9 +17,9 @@ DSONNXINFER_BEGIN_NAMESPACE
 
 class AcousticInference::Impl {
 public:
-    Impl() :
+    explicit Impl(bool vocoderPreferCpu_ = false) :
             inferenceHandle("ds_acoustic"),
-            vocoderPreferCpu(true),
+            vocoderPreferCpu(vocoderPreferCpu_),
             depth(Environment::instance()->defaultDepth()),
             steps(Environment::instance()->defaultSteps()) {}
 
@@ -158,8 +158,9 @@ public:
 };
 
 AcousticInference::AcousticInference(DsConfig &&dsConfig,
-                                     DsVocoderConfig &&dsVocoderConfig)
-        : IInference(), _impl(std::make_unique<Impl>()) {
+                                     DsVocoderConfig &&dsVocoderConfig,
+                                     bool vocoderPreferCpu)
+        : IInference(), _impl(std::make_unique<Impl>(vocoderPreferCpu)) {
     m_type = IT_Acoustic;
 
     auto &impl = *_impl;
@@ -168,8 +169,9 @@ AcousticInference::AcousticInference(DsConfig &&dsConfig,
 }
 
 AcousticInference::AcousticInference(const DsConfig &dsConfig,
-                                     const DsVocoderConfig &dsVocoderConfig)
-        : IInference(), _impl(std::make_unique<Impl>()) {
+                                     const DsVocoderConfig &dsVocoderConfig,
+                                     bool vocoderPreferCpu)
+        : IInference(), _impl(std::make_unique<Impl>(vocoderPreferCpu)) {
     m_type = IT_Acoustic;
 
     auto &impl = *_impl;

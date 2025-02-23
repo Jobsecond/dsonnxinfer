@@ -10,9 +10,11 @@ DSONNXINFER_BEGIN_NAMESPACE
 class DSONNXINFER_EXPORT AcousticInference : public IInference {
 public:
     AcousticInference(DsConfig &&dsConfig,
-                      DsVocoderConfig &&dsVocoderConfig);
+                      DsVocoderConfig &&dsVocoderConfig,
+                      bool vocoderPreferCpu = false);
     AcousticInference(const DsConfig &dsConfig,
-                      const DsVocoderConfig &dsVocoderConfig);
+                      const DsVocoderConfig &dsVocoderConfig,
+                      bool vocoderPreferCpu = false);
     ~AcousticInference() override;
 
     Status open() override;
