@@ -30,6 +30,7 @@ enum DsFeature: dsfeature_t {
     kfLinguisticPredictDur      = 1 << 12,
     kfSpkEmbed                  = 1 << 13,
     kfPitchControllable         = 1 << 14,
+    kfParamMouthOpening         = 1 << 15,
 };
 
 struct DSONNXINFER_EXPORT DsVocoderConfig {

@@ -111,6 +111,12 @@ DsConfig DsConfig::fromYAML(const std::filesystem::path &dsConfigPath, bool *ok)
         }
     }
 
+    if (const auto node = config["use_mouth_opening_embed"]) {
+        if (node.as<bool>()) {
+            dsConfig.features |= kfParamMouthOpening;
+        }
+    }
+
     if (const auto node = config["speakers"]) {
         dsConfig.features |= kfSpkEmbed;
         dsConfig.speakers = node.as<std::vector<std::string>>();
@@ -304,6 +310,12 @@ DsVarianceConfig DsVarianceConfig::fromYAML(const std::filesystem::path &dsVaria
     if (const auto node = config["predict_voicing"]) {
         if (node.as<bool>()) {
             dsVarianceConfig.features |= kfParamVoicing;
+        }
+    }
+
+    if (const auto node = config["predict_mouth_opening"]) {
+        if (node.as<bool>()) {
+            dsVarianceConfig.features |= kfParamMouthOpening;
         }
     }
 

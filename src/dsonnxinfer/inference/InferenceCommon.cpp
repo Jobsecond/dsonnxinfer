@@ -289,6 +289,9 @@ InferMap acousticPreprocess(
     if ((dsConfig.features & kfParamEnergy) && !tryAddParam("energy")) {
         missingParameters.emplace_back("energy");
     }
+    if ((dsConfig.features & kfParamMouthOpening) && !tryAddParam("mouth_opening")) {
+        missingParameters.emplace_back("mouth_opening");
+    }
 
     if (!missingParameters.empty()) {
         std::string errMsg = "The acoustic model expects";
@@ -624,6 +627,9 @@ InferMap variancePreprocess(
     }
     if (dsVarianceConfig.features & kfParamVoicing) {
         expectParamNames.emplace_back("voicing");
+    }
+    if (dsVarianceConfig.features & kfParamMouthOpening) {
+        expectParamNames.emplace_back("mouth_opening");
     }
 
     if (expectParamNames.empty()) {

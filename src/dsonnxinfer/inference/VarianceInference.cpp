@@ -43,6 +43,9 @@ public:
         if (dsVarianceConfig.features & kfParamVoicing) {
             expectParamNames.emplace_back("voicing_pred");
         }
+        if (dsVarianceConfig.features & kfParamMouthOpening) {
+            expectParamNames.emplace_back("mouth_opening_pred");
+        }
 
         std::string errorMessage;
         if (!inferenceHandle.open({{dsVarianceConfig.linguistic, false}, {dsVarianceConfig.variance, false}}, &errorMessage)) {
