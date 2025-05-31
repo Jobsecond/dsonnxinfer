@@ -89,9 +89,6 @@ public:
             }
             const float inferDepth = (std::min)(depth, dsConfig.maxDepth);
             inputData["depth"] = flowonnx::Tensor::create(&inferDepth, 1, &shapeArr, 1);
-        } else {
-            putStatus(status, Status_InferError, "Legacy models that do not support variable depth are no longer supported.");
-            return {};
         }
 
         flowonnx::InferenceData dataAcoustic, dataVocoder;
