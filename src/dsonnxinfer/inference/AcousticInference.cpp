@@ -83,20 +83,15 @@ public:
         }
 
         if (dsConfig.features & kfVariableDepth) {
-            inputData["depth"] = flowonnx::Tensor::create(&depth, 1, &shapeArr, 1);
-        } else {
-            int64_t dsDepthInt64 = std::llround(depth * 1000);
-            if ((dsConfig.features & kfShallowDiffusion) && !(dsConfig.features & kfContinuousAcceleration)) {
-                if (dsConfig.maxDepth < 0) {
-                    putStatus(status, Status_InferError, "!! ERROR: max_depth is unset or negative in acoustic configuration.");
-                    return {};
-                }
-                dsDepthInt64 = (std::min)(dsDepthInt64, static_cast<int64_t>(dsConfig.maxDepth));
-                int64_t speedup = getSpeedupFromSteps(steps);
-                // make sure depth can be divided by speedup
-                dsDepthInt64 = dsDepthInt64 / speedup * speedup;
+            if (dsConfig.maxDepth < 0) {
+                putStatus(status, Status_InferError, "!! ERROR: max_depth is unset or negative in acoustic configuration.");
+                return {};
             }
-            inputData["depth"] = flowonnx::Tensor::create(&dsDepthInt64, 1, &shapeArr, 1);
+            const float inferDepth = (std::min)(depth, dsConfig.maxDepth);
+            inputData["depth"] = flowonnx::Tensor::create(&inferDepth, 1, &shapeArr, 1);
+        } else {
+            putStatus(status, Status_InferError, "Legacy models that do not support variable depth are no longer supported.");
+            return {};
         }
 
         flowonnx::InferenceData dataAcoustic, dataVocoder;
